@@ -1,4 +1,4 @@
-module github.com/artemis
+module github.com/mhshahin/artemis
 
 go 1.19
 
