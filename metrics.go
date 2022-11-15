@@ -18,7 +18,12 @@ type TracingMetrics struct {
 	RequestWriteDurationSeconds        *prometheus.HistogramVec
 }
 
-var HttpLabels prometheus.Labels
+var (
+	SmallDurationBuckets = []float64{.0001, .0005, .001, .002, .005, .01, .05, .1, 1, 2.5, 5, 10}
+
+	HttpLabels prometheus.Labels
+	HostLabel  = "host"
+)
 
 func NewTracingMetrics(namespace string) *TracingMetrics {
 	return &TracingMetrics{
@@ -26,6 +31,7 @@ func NewTracingMetrics(namespace string) *TracingMetrics {
 			Namespace: namespace,
 			Name:      "http_get_connection_duration_seconds",
 			Help:      "HTTP Get Connection Duration",
+			Buckets:   SmallDurationBuckets,
 		}, []string{}),
 		ReuseConnections: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
@@ -41,31 +47,36 @@ func NewTracingMetrics(namespace string) *TracingMetrics {
 			Namespace: namespace,
 			Name:      "http_first_byte_response_duration_seconds",
 			Help:      "HTTP Duration of Getting First Response Bytes",
+			Buckets:   SmallDurationBuckets,
 		}, []string{}),
 		DNSLookupDurationSeconds: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: namespace,
 			Name:      "http_dns_lookup_duration_seconds",
 			Help:      "HTTP DNS Lookup Duration",
-		}, []string{}),
+			Buckets:   SmallDurationBuckets,
+		}, []string{HostLabel}),
 		DNSCoalesced: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "http_dns_coalesced_queries_counter",
 			Help:      "HTTP DNS Query Coalesced Counter",
-		}, []string{}),
+		}, []string{HostLabel}),
 		ConnectionHandshakeDurationSeconds: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: namespace,
 			Name:      "http_connection_handshake_duration_seconds",
 			Help:      "HTTP Connection Handshake Duration",
+			Buckets:   SmallDurationBuckets,
 		}, []string{}),
 		HeaderWriteDrurationSeconds: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: namespace,
 			Name:      "http_header_write_duration_seconds",
 			Help:      "HTTP Header Write Duration",
+			Buckets:   SmallDurationBuckets,
 		}, []string{}),
 		RequestWriteDurationSeconds: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: namespace,
 			Name:      "http_request_write_duration_seconds",
 			Help:      "HTTP Request Write Duration",
+			Buckets:   SmallDurationBuckets,
 		}, []string{}),
 	}
 }
@@ -90,11 +101,11 @@ func (tm *TracingMetrics) FirstByteReceiveDurationSecondsMetric(startTime time.T
 
 func (tm *TracingMetrics) DNSLookupDurationSecondsMetric(dnsStartTime time.Time, dnsHost string) {
 	dnsDuration := time.Since(dnsStartTime)
-	tm.DNSLookupDurationSeconds.With(prometheus.Labels{"host": dnsHost}).Observe(dnsDuration.Seconds())
+	tm.DNSLookupDurationSeconds.With(prometheus.Labels{HostLabel: dnsHost}).Observe(dnsDuration.Seconds())
 }
 
 func (tm *TracingMetrics) DNSCoalescedMetric(dnsHost string) {
-	tm.DNSCoalesced.With(prometheus.Labels{"host": dnsHost}).Inc()
+	tm.DNSCoalesced.With(prometheus.Labels{HostLabel: dnsHost}).Inc()
 }
 
 func (tm *TracingMetrics) ConnectionHandshakeDurationSecondsMetric(connStartTime time.Time) {
