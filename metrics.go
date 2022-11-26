@@ -21,8 +21,10 @@ type TracingMetrics struct {
 var (
 	SmallDurationBuckets = []float64{.0001, .0005, .001, .002, .005, .01, .05, .1, 1, 2.5, 5, 10}
 
-	HttpLabels prometheus.Labels
-	HostLabel  = "host"
+	HttpLabels  prometheus.Labels
+	HostLabel   = "host"
+	MethodLabel = "method"
+	UrlLabel    = "url"
 )
 
 func NewTracingMetrics(namespace string) *TracingMetrics {
@@ -32,7 +34,7 @@ func NewTracingMetrics(namespace string) *TracingMetrics {
 			Name:      "http_get_connection_duration_seconds",
 			Help:      "HTTP Get Connection Duration",
 			Buckets:   SmallDurationBuckets,
-		}, []string{}),
+		}, []string{MethodLabel, UrlLabel}),
 		ReuseConnections: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "http_reuse_connections",
@@ -48,7 +50,7 @@ func NewTracingMetrics(namespace string) *TracingMetrics {
 			Name:      "http_first_byte_response_duration_seconds",
 			Help:      "HTTP Duration of Getting First Response Bytes",
 			Buckets:   SmallDurationBuckets,
-		}, []string{}),
+		}, []string{MethodLabel, UrlLabel}),
 		DNSLookupDurationSeconds: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: namespace,
 			Name:      "http_dns_lookup_duration_seconds",
@@ -65,25 +67,25 @@ func NewTracingMetrics(namespace string) *TracingMetrics {
 			Name:      "http_connection_handshake_duration_seconds",
 			Help:      "HTTP Connection Handshake Duration",
 			Buckets:   SmallDurationBuckets,
-		}, []string{}),
+		}, []string{MethodLabel, UrlLabel}),
 		HeaderWriteDrurationSeconds: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: namespace,
 			Name:      "http_header_write_duration_seconds",
 			Help:      "HTTP Header Write Duration",
 			Buckets:   SmallDurationBuckets,
-		}, []string{}),
+		}, []string{MethodLabel, UrlLabel}),
 		RequestWriteDurationSeconds: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: namespace,
 			Name:      "http_request_write_duration_seconds",
 			Help:      "HTTP Request Write Duration",
 			Buckets:   SmallDurationBuckets,
-		}, []string{}),
+		}, []string{MethodLabel, UrlLabel}),
 	}
 }
 
-func (tm *TracingMetrics) GetConnectionDurationSecondsMetric(getConnTime time.Time) {
+func (tm *TracingMetrics) GetConnectionDurationSecondsMetric(getConnTime time.Time, method, url string) {
 	getConnDuration := time.Since(getConnTime)
-	tm.GetConnectionDurationSeconds.With(HttpLabels).Observe(getConnDuration.Seconds())
+	tm.GetConnectionDurationSeconds.With(prometheus.Labels{MethodLabel: method, UrlLabel: url}).Observe(getConnDuration.Seconds())
 }
 
 func (tm *TracingMetrics) ReuseConnectionsMetric() {
@@ -94,9 +96,9 @@ func (tm *TracingMetrics) ReuseIdleConnectionsMetric() {
 	tm.ReuseIdleConnections.With(HttpLabels).Inc()
 }
 
-func (tm *TracingMetrics) FirstByteReceiveDurationSecondsMetric(startTime time.Time) {
+func (tm *TracingMetrics) FirstByteReceiveDurationSecondsMetric(startTime time.Time, method, url string) {
 	getFirstByteDuration := time.Since(startTime)
-	tm.FirstByteReceiveDurationSeconds.With(HttpLabels).Observe(getFirstByteDuration.Seconds())
+	tm.FirstByteReceiveDurationSeconds.With(prometheus.Labels{MethodLabel: method, UrlLabel: url}).Observe(getFirstByteDuration.Seconds())
 }
 
 func (tm *TracingMetrics) DNSLookupDurationSecondsMetric(dnsStartTime time.Time, dnsHost string) {
@@ -108,19 +110,19 @@ func (tm *TracingMetrics) DNSCoalescedMetric(dnsHost string) {
 	tm.DNSCoalesced.With(prometheus.Labels{HostLabel: dnsHost}).Inc()
 }
 
-func (tm *TracingMetrics) ConnectionHandshakeDurationSecondsMetric(connStartTime time.Time) {
+func (tm *TracingMetrics) ConnectionHandshakeDurationSecondsMetric(connStartTime time.Time, method, url string) {
 	handshakeDuration := time.Since(connStartTime)
-	tm.ConnectionHandshakeDurationSeconds.With(HttpLabels).Observe(handshakeDuration.Seconds())
+	tm.ConnectionHandshakeDurationSeconds.With(prometheus.Labels{MethodLabel: method, UrlLabel: url}).Observe(handshakeDuration.Seconds())
 }
 
-func (tm *TracingMetrics) HeaderWriteDrurationSecondsMetric(startTime time.Time) {
+func (tm *TracingMetrics) HeaderWriteDrurationSecondsMetric(startTime time.Time, method, url string) {
 	headerWriteDuration := time.Since(startTime)
-	tm.HeaderWriteDrurationSeconds.With(HttpLabels).Observe(headerWriteDuration.Seconds())
+	tm.HeaderWriteDrurationSeconds.With(prometheus.Labels{MethodLabel: method, UrlLabel: url}).Observe(headerWriteDuration.Seconds())
 }
 
-func (tm *TracingMetrics) RequestWriteDurationSecondsMetric(startTime time.Time) {
+func (tm *TracingMetrics) RequestWriteDurationSecondsMetric(startTime time.Time, method, url string) {
 	requestWriteDuration := time.Since(startTime)
-	tm.RequestWriteDurationSeconds.With(HttpLabels).Observe(requestWriteDuration.Seconds())
+	tm.RequestWriteDurationSeconds.With(prometheus.Labels{MethodLabel: method, UrlLabel: url}).Observe(requestWriteDuration.Seconds())
 }
 
 func (tm *TracingMetrics) GetCollectors() []prometheus.Collector {

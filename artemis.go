@@ -27,7 +27,7 @@ func NewTracer(namespace string) *Tracer {
 func (t *Tracer) RequestWithTracer(request *http.Request) *http.Request {
 	requestStart := time.Now()
 
-	httpTracer := NewHttpTracer(requestStart, t.Metrics)
+	httpTracer := NewHttpTracer(requestStart, t.Metrics, request.Method, request.URL.Host)
 
 	clientTrace := &httptrace.ClientTrace{
 		GetConn:              httpTracer.GetConn,

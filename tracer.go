@@ -14,12 +14,17 @@ type HttpTracer struct {
 	ConnectStartTime time.Time
 
 	Metrics *TracingMetrics
+
+	ReqMethod string
+	ReqURL    string
 }
 
-func NewHttpTracer(requestStart time.Time, metrics *TracingMetrics) *HttpTracer {
+func NewHttpTracer(requestStart time.Time, metrics *TracingMetrics, method, reqUrl string) *HttpTracer {
 	return &HttpTracer{
 		RequestStartTime: requestStart,
 		Metrics:          metrics,
+		ReqMethod:        method,
+		ReqURL:           reqUrl,
 	}
 }
 
@@ -28,7 +33,7 @@ func (ht *HttpTracer) GetConn(hostPort string) {
 }
 
 func (ht *HttpTracer) GotConn(info httptrace.GotConnInfo) {
-	ht.Metrics.GetConnectionDurationSecondsMetric(ht.GetConnTime)
+	ht.Metrics.GetConnectionDurationSecondsMetric(ht.GetConnTime, ht.ReqMethod, ht.ReqURL)
 
 	if info.Reused {
 		ht.Metrics.ReuseConnectionsMetric()
@@ -40,7 +45,7 @@ func (ht *HttpTracer) GotConn(info httptrace.GotConnInfo) {
 }
 
 func (ht *HttpTracer) GotFirstResponseByte() {
-	ht.Metrics.FirstByteReceiveDurationSecondsMetric(ht.RequestStartTime)
+	ht.Metrics.FirstByteReceiveDurationSecondsMetric(ht.RequestStartTime, ht.ReqMethod, ht.ReqURL)
 }
 
 func (ht *HttpTracer) DNSStart(info httptrace.DNSStartInfo) {
@@ -61,13 +66,13 @@ func (ht *HttpTracer) ConnStart(network, addr string) {
 }
 
 func (ht *HttpTracer) ConnDone(network, addr string, err error) {
-	ht.Metrics.ConnectionHandshakeDurationSecondsMetric(ht.ConnectStartTime)
+	ht.Metrics.ConnectionHandshakeDurationSecondsMetric(ht.ConnectStartTime, ht.ReqMethod, ht.ReqURL)
 }
 
 func (ht *HttpTracer) WroteHeaders() {
-	ht.Metrics.HeaderWriteDrurationSecondsMetric(ht.RequestStartTime)
+	ht.Metrics.HeaderWriteDrurationSecondsMetric(ht.RequestStartTime, ht.ReqMethod, ht.ReqURL)
 }
 
 func (ht *HttpTracer) WroteRequest(info httptrace.WroteRequestInfo) {
-	ht.Metrics.RequestWriteDurationSecondsMetric(ht.RequestStartTime)
+	ht.Metrics.RequestWriteDurationSecondsMetric(ht.RequestStartTime, ht.ReqMethod, ht.ReqURL)
 }
