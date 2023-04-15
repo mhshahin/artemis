@@ -16,6 +16,7 @@ type TracingMetrics struct {
 	ConnectionHandshakeDurationSeconds *prometheus.HistogramVec
 	HeaderWriteDrurationSeconds        *prometheus.HistogramVec
 	RequestWriteDurationSeconds        *prometheus.HistogramVec
+	TLSHandshakeDurationSeconds        *prometheus.HistogramVec
 }
 
 var (
@@ -68,6 +69,12 @@ func NewTracingMetrics(namespace string) *TracingMetrics {
 			Help:      "HTTP Connection Handshake Duration",
 			Buckets:   SmallDurationBuckets,
 		}, []string{MethodLabel, UrlLabel}),
+		TLSHandshakeDurationSeconds: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace: namespace,
+			Name:      "http_tls_handshake_duration_seconds",
+			Help:      "HTTP TLS Handshake Duration",
+			Buckets:   SmallDurationBuckets,
+		}, []string{MethodLabel, UrlLabel}),
 		HeaderWriteDrurationSeconds: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: namespace,
 			Name:      "http_header_write_duration_seconds",
@@ -115,6 +122,11 @@ func (tm *TracingMetrics) ConnectionHandshakeDurationSecondsMetric(connStartTime
 	tm.ConnectionHandshakeDurationSeconds.With(prometheus.Labels{MethodLabel: method, UrlLabel: url}).Observe(handshakeDuration.Seconds())
 }
 
+func (tm *TracingMetrics) TLSHandshakeDurationSecondsMetric(connStartTime time.Time, method, url string) {
+	handshakeDuration := time.Since(connStartTime)
+	tm.TLSHandshakeDurationSeconds.With(prometheus.Labels{MethodLabel: method, UrlLabel: url}).Observe(handshakeDuration.Seconds())
+}
+
 func (tm *TracingMetrics) HeaderWriteDrurationSecondsMetric(startTime time.Time, method, url string) {
 	headerWriteDuration := time.Since(startTime)
 	tm.HeaderWriteDrurationSeconds.With(prometheus.Labels{MethodLabel: method, UrlLabel: url}).Observe(headerWriteDuration.Seconds())
@@ -133,6 +145,7 @@ func (tm *TracingMetrics) GetCollectors() []prometheus.Collector {
 		tm.DNSLookupDurationSeconds,
 		tm.DNSCoalesced,
 		tm.ConnectionHandshakeDurationSeconds,
+		tm.TLSHandshakeDurationSeconds,
 		tm.HeaderWriteDrurationSeconds,
 		tm.RequestWriteDurationSeconds,
 	}

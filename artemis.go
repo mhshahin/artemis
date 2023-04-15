@@ -37,6 +37,8 @@ func (t *Tracer) RequestWithTracer(request *http.Request) *http.Request {
 		DNSDone:              httpTracer.DNSDone,
 		ConnectStart:         httpTracer.ConnStart,
 		ConnectDone:          httpTracer.ConnDone,
+		TLSHandshakeStart:    httpTracer.TLSHandshakeStart,
+		TLSHandshakeDone:     httpTracer.TLSHandshakeDone,
 		WroteHeaders:         httpTracer.WroteHeaders,
 		WroteRequest:         httpTracer.WroteRequest,
 	}

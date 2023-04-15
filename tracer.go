@@ -1,6 +1,7 @@
 package artemis
 
 import (
+	"crypto/tls"
 	"net/http/httptrace"
 	"time"
 )
@@ -8,10 +9,11 @@ import (
 type HttpTracer struct {
 	RequestStartTime time.Time
 
-	GetConnTime      time.Time
-	DNSStartTime     time.Time
-	DNSHost          string
-	ConnectStartTime time.Time
+	GetConnTime           time.Time
+	DNSStartTime          time.Time
+	DNSHost               string
+	ConnectStartTime      time.Time
+	TLSHandshakeStartTime time.Time
 
 	Metrics *TracingMetrics
 
@@ -67,6 +69,14 @@ func (ht *HttpTracer) ConnStart(network, addr string) {
 
 func (ht *HttpTracer) ConnDone(network, addr string, err error) {
 	ht.Metrics.ConnectionHandshakeDurationSecondsMetric(ht.ConnectStartTime, ht.ReqMethod, ht.ReqURL)
+}
+
+func (ht *HttpTracer) TLSHandshakeStart() {
+	ht.TLSHandshakeStartTime = time.Now()
+}
+
+func (ht *HttpTracer) TLSHandshakeDone(tls.ConnectionState, error) {
+	ht.Metrics.TLSHandshakeDurationSecondsMetric(ht.TLSHandshakeStartTime, ht.ReqMethod, ht.ReqURL)
 }
 
 func (ht *HttpTracer) WroteHeaders() {
